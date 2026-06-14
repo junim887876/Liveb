@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel L-Bar Automático</title>
+    <title>Painel TV - Múltiplos Vídeos + L-Bar</title>
     <style>
         body {
             margin: 0;
@@ -32,7 +32,8 @@
             transition: background-image 0.5s ease;
         }
 
-        #video-container {
+        /* O container que faz o movimento do "L" */
+        #video-wrapper {
             position: absolute;
             top: 0;
             left: 0;
@@ -54,10 +55,12 @@
             box-shadow: 15px 15px 30px rgba(0,0,0,0.8);
         }
 
+        /* O player do YouTube ocupa 100% do wrapper */
         iframe {
             width: 100%;
             height: 100%;
             border: none;
+            pointer-events: none; /* Evita que cliquem no vídeo sem querer */
         }
     </style>
 </head>
@@ -65,59 +68,117 @@
 
     <div id="display-screen">
         <div id="ad-background"></div>
-        <div id="video-container"></div>
+        <div id="video-wrapper">
+            <div id="player"></div>
+        </div>
     </div>
 
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        // LINK DA LIVE FIXO
-        const linkYoutube = "https://www.youtube.com/live/byP1peOCkzI?is=BElC-pXWEASUhkBD";
+        // ==========================================
+        // 1. LISTA DE VÍDEOS (Adicione quantos quiser)
+        // ==========================================
+        const filaDeVideos = [
+            "https://www.youtube.com/live/CQeTZ1fCJFw?is=9AYhzclujDEakynD",
+            "https://www.youtube.com/live/EfRQHpB3BPY?is=lXbDMKRE3R5hg341",
+            "https://youtu.be/MAIS_UM_LINK_AQUI"
+        ];
 
-        // LISTA DE ANÚNCIOS
+        // ==========================================
+        // 2. LISTA DE ANÚNCIOS
+        // ==========================================
         const anuncios = [
+            'anuncio101.jpg',
             'anuncio100.jpg'
         ];
 
-        let anuncioAtual = 0;
+        // ==========================================
+        // 3. CONFIGURAÇÃO DE TEMPO (em segundos)
+        // ==========================================
+        const TEMPO_LIVE_CHEIA = 20; 
+        const TEMPO_DO_ANUNCIO = 10; 
 
+        // ==========================================
+        // LÓGICA DO SISTEMA (Não precisa alterar)
+        // ==========================================
+        let videoAtualIndex = 0;
+        let anuncioAtualIndex = 0;
+        let player;
+
+        // Função para extrair o ID de qualquer link do YouTube
         function extrairVideoID(url) {
             const regex = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|live\/))([\w-]{11})/i;
             const match = url.match(regex);
             return match ? match[1] : null;
         }
 
-        function iniciarSistema() {
-            const videoID = extrairVideoID(linkYoutube);
+        // Essa função é chamada automaticamente pelo script da API do YouTube
+        function onYouTubeIframeAPIReady() {
+            const primeiroVideoID = extrairVideoID(filaDeVideos[videoAtualIndex]);
+            
+            player = new YT.Player('player', {
+                videoId: primeiroVideoID,
+                playerVars: {
+                    'autoplay': 1,
+                    'controls': 0, // Esconde os controles
+                    'modestbranding': 1,
+                    'rel': 0 // Não mostra vídeos recomendados de outros canais no final
+                },
+                events: {
+                    'onReady': onPlayerReady,
+                    'onStateChange': onPlayerStateChange
+                }
+            });
+        }
 
-            if (!videoID) return;
-
-            const videoContainer = document.getElementById('video-container');
-            // mute=1 garante o autoplay imediato sem bloqueio do navegador
-            videoContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoID}?autoplay=1&mute=0&controls=0&modestbranding=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
-
+        function onPlayerReady(event) {
+            // Inicia o vídeo e a rotação de anúncios assim que o player carrega
+            event.target.playVideo();
             loopDeAnuncios();
         }
 
-        function loopDeAnuncios() {
-            const video = document.getElementById('video-container');
-            const fundoAnuncio = document.getElementById('ad-background');
-
-            video.classList.remove('shrunk');
-
-            setTimeout(() => {
-                fundoAnuncio.style.backgroundImage = `url('${anuncios[anuncioAtual]}')`;
-                video.classList.add('shrunk');
-
-                setTimeout(() => {
-                    anuncioAtual++;
-                    if (anuncioAtual >= anuncios.length) anuncioAtual = 0;
-                    loopDeAnuncios();
-                }, 3000); 
-
-            }, 5000); 
+        // Fica de olho no status do vídeo
+        function onPlayerStateChange(event) {
+            // Se o estado for 0 (YT.PlayerState.ENDED), significa que o vídeo acabou
+            if (event.data === 0) {
+                tocarProximoVideo();
+            }
         }
 
-        // Executa automaticamente assim que a página abre
-        window.onload = iniciarSistema;
+        function tocarProximoVideo() {
+            videoAtualIndex++;
+            
+            // Se chegou no final da lista, volta para o primeiro vídeo (loop infinito)
+            if (videoAtualIndex >= filaDeVideos.length) {
+                videoAtualIndex = 0;
+            }
+
+            const proximoID = extrairVideoID(filaDeVideos[videoAtualIndex]);
+            if (proximoID) {
+                player.loadVideoById(proximoID); // Troca o vídeo instantaneamente
+            }
+        }
+
+        function loopDeAnuncios() {
+            const wrapper = document.getElementById('video-wrapper');
+            const fundoAnuncio = document.getElementById('ad-background');
+
+            wrapper.classList.remove('shrunk'); // Tela cheia
+
+            setTimeout(() => {
+                fundoAnuncio.style.backgroundImage = `url('${anuncios[anuncioAtualIndex]}')`;
+                wrapper.classList.add('shrunk'); // Encolhe em L
+
+                setTimeout(() => {
+                    anuncioAtualIndex++;
+                    if (anuncioAtualIndex >= anuncios.length) anuncioAtualIndex = 0;
+                    
+                    loopDeAnuncios(); // Repete o ciclo do anúncio
+
+                }, TEMPO_DO_ANUNCIO * 2000); 
+
+            }, TEMPO_LIVE_CHEIA * 5000); 
+        }
     </script>
 </body>
 </html>
