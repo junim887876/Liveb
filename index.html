@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Anúncios L-Bar</title>
+    <title>Painel L-Bar Automático</title>
     <style>
-        /* Estilo Minimalista e Premium */
         body {
             margin: 0;
             padding: 0;
@@ -15,53 +14,12 @@
             overflow: hidden;
         }
 
-        #setup-screen {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(30, 30, 30, 0.9);
-            padding: 40px;
-            border-radius: 20px;
-            backdrop-filter: blur(15px);
-            text-align: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-            z-index: 10;
-        }
-
-        input {
-            width: 80%;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 10px;
-            border: 1px solid #555;
-            background: #111;
-            color: #fff;
-            font-size: 16px;
-        }
-
-        button {
-            padding: 15px 30px;
-            border-radius: 10px;
-            border: none;
-            background: #fff;
-            color: #000;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        button:hover { transform: scale(1.05); }
-
         #display-screen {
-            display: none;
             width: 100vw;
             height: 100vh;
             position: relative;
         }
 
-        /* Fundo em Tela Cheia (onde fica o Anúncio em "L") */
         #ad-background {
             position: absolute;
             top: 0;
@@ -74,7 +32,6 @@
             transition: background-image 0.5s ease;
         }
 
-        /* Container do Vídeo */
         #video-container {
             position: absolute;
             top: 0;
@@ -82,21 +39,19 @@
             width: 100%;
             height: 100%;
             z-index: 2;
-            /* Animação fluida estilo Apple */
             transition: all 0.8s cubic-bezier(0.25, 0.8, 0.25, 1);
             background: #000; 
         }
 
-        /* Classe que cria o formato idêntico ao seu desenho (Vídeo no topo esquerdo) */
         .shrunk {
-            width: 75% !important; /* Vídeo ocupa 75% da largura */
-            height: 75% !important; /* Vídeo ocupa 75% da altura */
+            width: 75% !important;
+            height: 75% !important;
             top: 0 !important;
             left: 0 !important;
-            border-bottom-right-radius: 20px; /* Canto arredondado moderno */
-            border-right: 4px solid #fff; /* Borda branca separando do anúncio */
+            border-bottom-right-radius: 20px;
+            border-right: 4px solid #fff;
             border-bottom: 4px solid #fff;
-            box-shadow: 15px 15px 30px rgba(0,0,0,0.8); /* Sombra para destacar da propaganda */
+            box-shadow: 15px 15px 30px rgba(0,0,0,0.8);
         }
 
         iframe {
@@ -108,22 +63,16 @@
 </head>
 <body>
 
-    <div id="setup-screen">
-        <h2>Transmissão + Ofertas</h2>
-        <input type="text" id="yt-link" placeholder="https://www.youtube.com/live/vC3fV_awcWE?is=fKg2nDQh_lB-24xJ">
-        <br>
-        <button onclick="iniciarSistema()">Iniciar Transmissão</button>
-    </div>
-
     <div id="display-screen">
         <div id="ad-background"></div>
         <div id="video-container"></div>
     </div>
 
     <script>
-        // ==========================================
-        // ADICIONE OU REMOVA SEUS ANÚNCIOS AQUI
-        // ==========================================
+        // LINK DA LIVE FIXO
+        const linkYoutube = "https://www.youtube.com/live/vC3fV_awcWE?is=fKg2nDQh_lB-24xJ";
+
+        // LISTA DE ANÚNCIOS
         const anuncios = [
             'anuncio.jpg',
             'anuncio1.jpg',
@@ -135,23 +84,19 @@
         let anuncioAtual = 0;
 
         function extrairVideoID(url) {
-            const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+            const regex = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|live\/))([\w-]{11})/i;
             const match = url.match(regex);
             return match ? match[1] : null;
         }
 
         function iniciarSistema() {
-            const link = document.getElementById('yt-link').value;
-            const videoID = extrairVideoID(link);
+            const videoID = extrairVideoID(linkYoutube);
 
-            if (!videoID) return alert('Insira um link válido do YouTube.');
-
-            document.getElementById('setup-screen').style.display = 'none';
-            document.getElementById('display-screen').style.display = 'block';
+            if (!videoID) return;
 
             const videoContainer = document.getElementById('video-container');
-            // Modestbranding tira o logo do youtube, controls=0 tira a barra de baixo
-            videoContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoID}?autoplay=1&mute=0&controls=0&modestbranding=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+            // mute=1 garante o autoplay imediato sem bloqueio do navegador
+            videoContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoID}?autoplay=1&mute=1&controls=0&modestbranding=1" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
 
             loopDeAnuncios();
         }
@@ -160,28 +105,23 @@
             const video = document.getElementById('video-container');
             const fundoAnuncio = document.getElementById('ad-background');
 
-            // 1. TELA CHEIA (Fica assim por 20 segundos)
             video.classList.remove('shrunk');
 
             setTimeout(() => {
-                // Prepara a imagem de fundo atual
                 fundoAnuncio.style.backgroundImage = `url('${anuncios[anuncioAtual]}')`;
-                
-                // 2. ENCOLHE PARA O FORMATO EM "L" (Fica assim por 10 segundos)
                 video.classList.add('shrunk');
 
                 setTimeout(() => {
-                    // Atualiza a fila para a próxima foto
                     anuncioAtual++;
                     if (anuncioAtual >= anuncios.length) anuncioAtual = 0;
-                    
-                    // Repete tudo
                     loopDeAnuncios();
+                }, 10000); 
 
-                }, 10000); // 10 segundos no anúncio em L
-
-            }, 20000); // 20 segundos em tela cheia
+            }, 20000); 
         }
+
+        // Executa automaticamente assim que a página abre
+        window.onload = iniciarSistema;
     </script>
 </body>
 </html>
