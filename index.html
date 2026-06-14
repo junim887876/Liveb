@@ -96,8 +96,8 @@
         // ==========================================
         // 3. CONFIGURAÇÃO DE TEMPO (em segundos)
         // ==========================================
-        const TEMPO_LIVE_CHEIA = 20; 
-        const TEMPO_DO_ANUNCIO = 10; 
+        const TEMPO_LIVE_CHEIA = 10; 
+        const TEMPO_DO_ANUNCIO = 5; 
 
         // ==========================================
         // LÓGICA DO SISTEMA (Não precisa alterar)
@@ -176,9 +176,9 @@
                     
                     loopDeAnuncios(); // Repete o ciclo do anúncio
 
-                }, TEMPO_DO_ANUNCIO * 2000); 
+                }, TEMPO_DO_ANUNCIO * 1000); 
 
-            }, TEMPO_LIVE_CHEIA * 5000); 
+            }, TEMPO_LIVE_CHEIA * 1000); 
         }
     </script>
 </body>
